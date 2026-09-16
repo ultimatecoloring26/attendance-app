@@ -5,93 +5,162 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Employee Attendance</title>
 <style>
-  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-  .card { background: white; width: 100%; max-width: 380px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-  h2 { text-align: center; color: #1a1a1a; margin-top: 0; margin-bottom: 24px; }
-  label { font-weight: 600; color: #4a4a4a; display: block; margin-bottom: 8px; font-size: 14px; }
-  input { width: 100%; padding: 14px; margin-bottom: 24px; box-sizing: border-box; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; transition: border-color 0.2s; }
-  input:focus { border-color: #3b82f6; outline: none; }
-  button { width: 100%; padding: 16px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
-  button:active { transform: scale(0.98); }
-  #btn-in { background-color: #10b981; color: white; }
-  #btn-out { background-color: #ef4444; color: white; }
-  #status { margin-top: 20px; font-weight: 600; text-align: center; min-height: 24px; padding: 10px; border-radius: 8px; font-size: 14px; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; overflow-x: hidden;}
+  .main-content { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+  .card { background: white; width: 100%; max-width: 380px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); position: relative;}
+  h2 { text-align: center; color: #1a1a1a; margin-top: 0; margin-bottom: 24px; }
+  label { font-weight: 600; color: #4a4a4a; display: block; margin-bottom: 8px; font-size: 14px; }
+  input { width: 100%; padding: 14px; margin-bottom: 24px; box-sizing: border-box; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; }
+  button { width: 100%; padding: 16px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+  button:active { transform: scale(0.98); }
+  #btn-in { background-color: #10b981; color: white; }
+  #btn-out { background-color: #ef4444; color: white; }
+  #status { margin-top: 20px; font-weight: 600; text-align: center; min-height: 24px; padding: 10px; border-radius: 8px; font-size: 14px; }
+  
+  /* Employer Sidebar Styles */
+  .employer-btn { position: absolute; top: 15px; right: 15px; background: transparent; color: #6b7280; width: auto; padding: 5px 10px; font-size: 12px; }
+  #sidebar { position: fixed; top: 0; right: -100%; width: 100%; max-width: 500px; height: 100vh; background: white; box-shadow: -4px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 1000; overflow-y: auto; display: flex; flex-direction: column;}
+  .sidebar-header { padding: 20px; background: #1f2937; color: white; display: flex; justify-content: space-between; align-items: center; }
+  .close-btn { background: transparent; color: white; width: auto; padding: 5px 10px; margin: 0; font-size: 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+  th { background-color: #f3f4f6; font-weight: 600; color: #374151; position: sticky; top: 0;}
+  .table-container { overflow-x: auto; padding: 10px; }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>Attendance Portal</h2>
-  
-  <label for="empName">Employee Name</label>
-  <input type="text" id="empName" placeholder="Enter your full name">
-  
-  <button id="btn-in" onclick="handleAttendance('Clock In')">Clock In</button>
-  <button id="btn-out" onclick="handleAttendance('Clock Out')">Clock Out</button>
-  
-  <div id="status"></div>
+<div class="main-content">
+  <div class="card">
+    <button class="employer-btn" onclick="openSidebar()">⚙️ Admin</button>
+    <h2>Attendance Portal</h2>
+    
+    <label for="empName">Employee Name</label>
+    <input type="text" id="empName" placeholder="Enter your full name">
+    
+    <button id="btn-in" onclick="handleAttendance('Clock In')">Clock In</button>
+    <button id="btn-out" onclick="handleAttendance('Clock Out')">Clock Out</button>
+    
+    <div id="status"></div>
+  </div>
+</div>
+
+<!-- Employer Sidebar -->
+<div id="sidebar">
+  <div class="sidebar-header">
+    <h3 style="margin:0;">Employer Dashboard</h3>
+    <button class="close-btn" onclick="closeSidebar()">✖</button>
+  </div>
+  <div class="table-container">
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Date</th>
+          <th>In</th>
+          <th>Out</th>
+          <th>OT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data will load here -->
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
-  // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
-  const API_URL = "https://script.google.com/u/0/home/projects/1645IvCzGPYCVGY0srS3cbDqLozhzvJntmJ9KCmcYkwiKV0LmJ-mMcn6O/edit";
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // PASTE YOUR CORRECT GOOGLE APPS SCRIPT WEB APP URL HERE:
+  // It MUST end in /exec
+  const API_URL = "https://script.google.com/macros/s/AKfycbzBa05F5C_4teM4PgSqz4-oeuVtL9xhBSxsiVNb5z7fbnBl8Bs9TCwQNkcY-CDpMj4VSw/exec";
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function handleAttendance(action) {
-    const name = document.getElementById('empName').value.trim();
-    const statusDiv = document.getElementById('status');
-    
-    if (!name) {
-      statusDiv.innerText = "⚠️ Please enter your name.";
-      statusDiv.style.backgroundColor = "#fee2e2";
-      statusDiv.style.color = "#991b1b";
-      return;
-    }
+  async function handleAttendance(action) {
+    const name = document.getElementById('empName').value.trim();
+    if (!name) return showStatus("⚠️ Please enter your name.", "#fee2e2", "#991b1b");
 
-    statusDiv.innerText = "📍 Acquiring GPS location...";
-    statusDiv.style.backgroundColor = "#e0f2fe";
-    statusDiv.style.color = "#075985";
+    showStatus("📍 Getting location...", "#e0f2fe", "#075985");
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function(position) {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          statusDiv.innerText = "⏳ Saving record...";
-          
-          // Construct the URL with the data
-          const url = `${API_URL}?name=${encodeURIComponent(name)}&action=${encodeURIComponent(action)}&lat=${lat}&lon=${lon}`;
+    if (!navigator.geolocation) return showStatus("❌ GPS not supported.", "#fee2e2", "#991b1b");
 
-          // Send data to Google Apps Script
-          fetch(url)
-            .then(response => response.text())
-            .then(resultMsg => {
-              statusDiv.innerText = resultMsg;
-              if (resultMsg.includes('Success')) {
-                statusDiv.style.backgroundColor = "#d1fae5";
-                statusDiv.style.color = "#065f46";
-                if (action === 'Clock In') document.getElementById('empName').value = ''; 
-              } else {
-                statusDiv.style.backgroundColor = "#fee2e2";
-                statusDiv.style.color = "#991b1b";
-              }
-            })
-            .catch(error => {
-              statusDiv.innerText = "❌ Network Error. Please try again.";
-              statusDiv.style.backgroundColor = "#fee2e2";
-              statusDiv.style.color = "#991b1b";
-            });
-        },
-        function(error) {
-          statusDiv.innerText = "❌ Location access is required.";
-          statusDiv.style.backgroundColor = "#fee2e2";
-          statusDiv.style.color = "#991b1b";
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      statusDiv.innerText = "❌ GPS is not supported on this device.";
-    }
-  }
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        let locationName = `${lat}, ${lon}`; // Fallback
+
+        showStatus("🗺️ Translating address...", "#e0f2fe", "#075985");
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+          const geoData = await geoRes.json();
+          if (geoData.display_name) locationName = geoData.display_name;
+        } catch(e) { console.log("Geocoding failed, using coordinates."); }
+
+        showStatus("⏳ Saving record...", "#e0f2fe", "#075985");
+        const url = `${API_URL}?name=${encodeURIComponent(name)}&action=${encodeURIComponent(action)}&location=${encodeURIComponent(locationName)}`;
+
+        fetch(url).then(res => res.text()).then(resultMsg => {
+            if (resultMsg.includes('Success')) {
+              showStatus(resultMsg, "#d1fae5", "#065f46");
+              if (action === 'Clock In') document.getElementById('empName').value = ''; 
+            } else {
+              showStatus(resultMsg, "#fee2e2", "#991b1b");
+            }
+          }).catch(() => showStatus("❌ Network Error.", "#fee2e2", "#991b1b"));
+      },
+      () => showStatus("❌ Location access is required.", "#fee2e2", "#991b1b"),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function showStatus(msg, bg, color) {
+    const statusDiv = document.getElementById('status');
+    statusDiv.innerText = msg;
+    statusDiv.style.backgroundColor = bg;
+    statusDiv.style.color = color;
+  }
+
+  function openSidebar() {
+    const pin = prompt("Enter Employer PIN (Hint: it is 1234):");
+    if (pin !== "1234") {
+        alert("Incorrect PIN");
+        return;
+    }
+    document.getElementById('sidebar').style.right = '0';
+    loadRecords();
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').style.right = '-100%';
+  }
+
+  function loadRecords() {
+    const tbody = document.querySelector('#recordsTable tbody');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading records...</td></tr>';
+    
+    fetch(`${API_URL}?action=ViewRecords`)
+      .then(res => res.json())
+      .then(data => {
+        tbody.innerHTML = '';
+        for (let i = data.length - 1; i > 0; i--) {
+          const row = data[i];
+          if(!row[0]) continue; 
+          
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row[0]}</td>
+            <td>${row[1]}</td>
+            <td>${row[2]}</td>
+            <td>${row[3] || '-'}</td>
+            <td>${row[5] || '-'}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      })
+      .catch(() => {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Failed to load data.</td></tr>';
+      });
+  }
 </script>
 </body>
 </html>
