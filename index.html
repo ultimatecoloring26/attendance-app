@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Attendance</title>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  .card { background: white; width: 100%; max-width: 380px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+  h2 { text-align: center; color: #1a1a1a; margin-top: 0; margin-bottom: 24px; }
+  label { font-weight: 600; color: #4a4a4a; display: block; margin-bottom: 8px; font-size: 14px; }
+  input { width: 100%; padding: 14px; margin-bottom: 24px; box-sizing: border-box; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; transition: border-color 0.2s; }
+  input:focus { border-color: #3b82f6; outline: none; }
+  button { width: 100%; padding: 16px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
+  button:active { transform: scale(0.98); }
+  #btn-in { background-color: #10b981; color: white; }
+  #btn-out { background-color: #ef4444; color: white; }
+  #status { margin-top: 20px; font-weight: 600; text-align: center; min-height: 24px; padding: 10px; border-radius: 8px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Attendance Portal</h2>
+  
+  <label for="empName">Employee Name</label>
+  <input type="text" id="empName" placeholder="Enter your full name">
+  
+  <button id="btn-in" onclick="handleAttendance('Clock In')">Clock In</button>
+  <button id="btn-out" onclick="handleAttendance('Clock Out')">Clock Out</button>
+  
+  <div id="status"></div>
+</div>
+
+<script>
+  // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+  const API_URL = "https://script.google.com/u/0/home/projects/1645IvCzGPYCVGY0srS3cbDqLozhzvJntmJ9KCmcYkwiKV0LmJ-mMcn6O/edit";
+
+  function handleAttendance(action) {
+    const name = document.getElementById('empName').value.trim();
+    const statusDiv = document.getElementById('status');
+    
+    if (!name) {
+      statusDiv.innerText = "⚠️ Please enter your name.";
+      statusDiv.style.backgroundColor = "#fee2e2";
+      statusDiv.style.color = "#991b1b";
+      return;
+    }
+
+    statusDiv.innerText = "📍 Acquiring GPS location...";
+    statusDiv.style.backgroundColor = "#e0f2fe";
+    statusDiv.style.color = "#075985";
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          statusDiv.innerText = "⏳ Saving record...";
+          
+          // Construct the URL with the data
+          const url = `${API_URL}?name=${encodeURIComponent(name)}&action=${encodeURIComponent(action)}&lat=${lat}&lon=${lon}`;
+
+          // Send data to Google Apps Script
+          fetch(url)
+            .then(response => response.text())
+            .then(resultMsg => {
+              statusDiv.innerText = resultMsg;
+              if (resultMsg.includes('Success')) {
+                statusDiv.style.backgroundColor = "#d1fae5";
+                statusDiv.style.color = "#065f46";
+                if (action === 'Clock In') document.getElementById('empName').value = ''; 
+              } else {
+                statusDiv.style.backgroundColor = "#fee2e2";
+                statusDiv.style.color = "#991b1b";
+              }
+            })
+            .catch(error => {
+              statusDiv.innerText = "❌ Network Error. Please try again.";
+              statusDiv.style.backgroundColor = "#fee2e2";
+              statusDiv.style.color = "#991b1b";
+            });
+        },
+        function(error) {
+          statusDiv.innerText = "❌ Location access is required.";
+          statusDiv.style.backgroundColor = "#fee2e2";
+          statusDiv.style.color = "#991b1b";
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      statusDiv.innerText = "❌ GPS is not supported on this device.";
+    }
+  }
+</script>
+</body>
+</html>
