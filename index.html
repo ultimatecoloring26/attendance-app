@@ -8,6 +8,11 @@
   body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f197db; margin: 0; }
   .main-content { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
   .card { background: ##f603bb; width: 100%; max-width: 380px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+
+  /* Add this right below your .card CSS */
+  .logo-section { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px dashed #ffc4e9; }
+  .company-logo { max-width: 150px; height: auto; margin-bottom: 5px; }
+  .branch-name { font-size: 16px; font-weight: 800; color: #1f2937; text-transform: uppercase; letter-spacing: 1px; }
   
   /* Profile Header UI */
   .profile-header { display: flex; align-items: center; margin-bottom: 24px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; }
@@ -33,6 +38,22 @@
 
 <div class="main-content">
   <div class="card">
+
+    <!-- NEW LOGO AND BRANCH SECTION -->
+    <div class="logo-section">
+      <img src="logo.png" alt="Coolblog Logo" class="company-logo">
+      <div class="branch-name">Tumpat Branch</div>
+    </div>
+    
+    <!-- Existing Profile Header -->
+    <div class="profile-header">
+      <div class="avatar" id="avatarCircle">Me</div>
+      <div class="user-info">
+        <h2>Attendance Portal</h2>
+        <p id="profileText">Log your daily working hours</p>
+      </div>
+    </div>
+    
     
     <div class="profile-header">
       <div class="avatar" id="avatarCircle">Me</div>
