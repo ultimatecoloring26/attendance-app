@@ -8,9 +8,20 @@
   body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; }
   .main-content { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
   .card { background: white; width: 100%; max-width: 380px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-  h2 { text-align: center; color: #1a1a1a; margin-top: 0; margin-bottom: 24px; }
+  
+  /* Profile Header UI */
+  .profile-header { display: flex; align-items: center; margin-bottom: 24px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; }
+  .avatar { width: 50px; height: 50px; background-color: #3b82f6; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; margin-right: 15px; }
+  .user-info h2 { margin: 0; font-size: 18px; color: #1f2937; text-align: left; }
+  .user-info p { margin: 4px 0 0 0; font-size: 13px; color: #6b7280; }
+
   label { font-weight: 600; color: #4a4a4a; display: block; margin-bottom: 8px; font-size: 14px; }
-  input { width: 100%; padding: 14px; margin-bottom: 24px; box-sizing: border-box; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; }
+  input { width: 100%; padding: 14px; margin-bottom: 8px; box-sizing: border-box; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; }
+  
+  /* Style for when the name is locked */
+  input[readonly] { background-color: #f3f4f6; color: #6b7280; cursor: not-allowed; border-color: #e5e7eb; }
+  .lock-msg { font-size: 12px; color: #10b981; margin-bottom: 20px; font-weight: 600; display: none; }
+
   button { width: 100%; padding: 16px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
   button:active { transform: scale(0.98); }
   #btn-in { background-color: #10b981; color: white; }
@@ -22,10 +33,18 @@
 
 <div class="main-content">
   <div class="card">
-    <h2>Attendance Portal</h2>
+    
+    <div class="profile-header">
+      <div class="avatar" id="avatarCircle">Me</div>
+      <div class="user-info">
+        <h2>Attendance Portal</h2>
+        <p>Log your daily working hours</p>
+      </div>
+    </div>
     
     <label for="empName">Employee Name</label>
     <input type="text" id="empName" placeholder="Enter your full name">
+    <div id="lockMsg" class="lock-msg">🔒 Device securely registered to you</div>
     
     <button id="btn-in" onclick="handleAttendance('Clock In')">Clock In</button>
     <button id="btn-out" onclick="handleAttendance('Clock Out')">Clock Out</button>
@@ -43,9 +62,20 @@
   window.onload = function() {
     const savedName = localStorage.getItem('savedEmployeeName');
     if (savedName) {
-      document.getElementById('empName').value = savedName;
+      lockDeviceToUser(savedName);
     }
   };
+
+  function lockDeviceToUser(name) {
+    const nameInput = document.getElementById('empName');
+    nameInput.value = name;
+    nameInput.setAttribute('readonly', true); // This stops them from typing a friend's name!
+    
+    document.getElementById('lockMsg').style.display = 'block';
+    
+    // Change the "Me" avatar to the first letter of their name
+    document.getElementById('avatarCircle').innerText = name.charAt(0).toUpperCase();
+  }
 
   async function handleAttendance(action) {
     const name = document.getElementById('empName').value.trim();
@@ -65,7 +95,7 @@
           const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
           const geoData = await geoRes.json();
           if (geoData.display_name) locationName = geoData.display_name;
-        } catch(e) { console.log("Geocoding failed, using coordinates."); }
+        } catch(e) { console.log("Geocoding failed."); }
 
         showStatus("⏳ Saving record...", "#e0f2fe", "#075985");
         const url = `${API_URL}?name=${encodeURIComponent(name)}&action=${encodeURIComponent(action)}&location=${encodeURIComponent(locationName)}`;
@@ -73,7 +103,11 @@
         fetch(url).then(res => res.text()).then(resultMsg => {
             if (resultMsg.includes('Success')) {
               showStatus(resultMsg, "#d1fae5", "#065f46");
+              
+              // Lock the device to this user immediately after their first successful clock-in!
               localStorage.setItem('savedEmployeeName', name);
+              lockDeviceToUser(name);
+              
             } else {
               showStatus(resultMsg, "#fee2e2", "#991b1b");
             }
