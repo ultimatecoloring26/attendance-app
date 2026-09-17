@@ -17,7 +17,7 @@
   #btn-out { background-color: #ef4444; color: white; }
   #status { margin-top: 20px; font-weight: 600; text-align: center; min-height: 24px; padding: 10px; border-radius: 8px; font-size: 14px; }
   
-  /* Employer Sidebar Styles */
+  /* Sidebar Styles */
   .employer-btn { position: absolute; top: 15px; right: 15px; background: transparent; color: #6b7280; width: auto; padding: 5px 10px; font-size: 12px; }
   #sidebar { position: fixed; top: 0; right: -100%; width: 100%; max-width: 500px; height: 100vh; background: white; box-shadow: -4px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 1000; overflow-y: auto; display: flex; flex-direction: column;}
   .sidebar-header { padding: 20px; background: #1f2937; color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -26,6 +26,11 @@
   th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
   th { background-color: #f3f4f6; font-weight: 600; color: #374151; position: sticky; top: 0;}
   .table-container { overflow-x: auto; padding: 10px; }
+
+  /* Device Memory Styles */
+  #welcomeSection { text-align: center; margin-bottom: 20px; display: none; background: #e0f2fe; padding: 15px; border-radius: 8px;}
+  #welcomeMessage { color: #0369a1; margin: 0 0 5px 0; font-size: 18px;}
+  .reset-link { font-size: 12px; color: #6b7280; text-decoration: underline; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -35,8 +40,17 @@
     <button class="employer-btn" onclick="openSidebar()">⚙️ Admin</button>
     <h2>Attendance Portal</h2>
     
-    <label for="empName">Employee Name</label>
-    <input type="text" id="empName" placeholder="Enter your full name">
+    <!-- User Input Section -->
+    <div id="nameSection">
+      <label for="empName">First Time Setup: Enter Name</label>
+      <input type="text" id="empName" placeholder="Enter your full name">
+    </div>
+
+    <!-- Welcome Back Section (Hidden by default) -->
+    <div id="welcomeSection">
+      <h3 id="welcomeMessage"></h3>
+      <a class="reset-link" onclick="resetDevice()">Not you? Reset device</a>
+    </div>
     
     <button id="btn-in" onclick="handleAttendance('Clock In')">Clock In</button>
     <button id="btn-out" onclick="handleAttendance('Clock Out')">Clock Out</button>
@@ -54,17 +68,9 @@
   <div class="table-container">
     <table id="recordsTable">
       <thead>
-        <tr>
-          <th>Name</th>
-          <th>Date</th>
-          <th>In</th>
-          <th>Out</th>
-          <th>OT</th>
-        </tr>
+        <tr><th>Name</th><th>Date</th><th>In</th><th>Out</th><th>OT</th></tr>
       </thead>
-      <tbody>
-        <!-- Data will load here -->
-      </tbody>
+      <tbody></tbody>
     </table>
   </div>
 </div>
@@ -72,13 +78,33 @@
 <script>
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // PASTE YOUR CORRECT GOOGLE APPS SCRIPT WEB APP URL HERE:
-  // It MUST end in /exec
   const API_URL = "https://script.google.com/macros/s/AKfycbzBa05F5C_4teM4PgSqz4-oeuVtL9xhBSxsiVNb5z7fbnBl8Bs9TCwQNkcY-CDpMj4VSw/exec";
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  // On page load, check if the device remembers the user
+  document.addEventListener("DOMContentLoaded", () => {
+    const savedName = localStorage.getItem("attendance_employee_name");
+    if (savedName) {
+      document.getElementById("nameSection").style.display = "none";
+      document.getElementById("welcomeSection").style.display = "block";
+      document.getElementById("welcomeMessage").innerText = "Welcome back, " + savedName;
+    }
+  });
+
   async function handleAttendance(action) {
-    const name = document.getElementById('empName').value.trim();
-    if (!name) return showStatus("⚠️ Please enter your name.", "#fee2e2", "#991b1b");
+    let name = localStorage.getItem("attendance_employee_name");
+    
+    // If no name is saved, grab it from the text box
+    if (!name) {
+      name = document.getElementById('empName').value.trim();
+      if (!name) return showStatus("⚠️ Please enter your name.", "#fee2e2", "#991b1b");
+      
+      // Save it to the device for next time!
+      localStorage.setItem("attendance_employee_name", name);
+      document.getElementById("nameSection").style.display = "none";
+      document.getElementById("welcomeSection").style.display = "block";
+      document.getElementById("welcomeMessage").innerText = "Welcome back, " + name;
+    }
 
     showStatus("📍 Getting location...", "#e0f2fe", "#075985");
 
@@ -87,14 +113,14 @@
     navigator.geolocation.getCurrentPosition(async (position) => {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-        let locationName = `${lat}, ${lon}`; // Fallback
+        let locationName = `${lat}, ${lon}`; 
 
         showStatus("🗺️ Translating address...", "#e0f2fe", "#075985");
         try {
           const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
           const geoData = await geoRes.json();
           if (geoData.display_name) locationName = geoData.display_name;
-        } catch(e) { console.log("Geocoding failed, using coordinates."); }
+        } catch(e) { console.log("Geocoding failed."); }
 
         showStatus("⏳ Saving record...", "#e0f2fe", "#075985");
         const url = `${API_URL}?name=${encodeURIComponent(name)}&action=${encodeURIComponent(action)}&location=${encodeURIComponent(locationName)}`;
@@ -102,15 +128,30 @@
         fetch(url).then(res => res.text()).then(resultMsg => {
             if (resultMsg.includes('Success')) {
               showStatus(resultMsg, "#d1fae5", "#065f46");
-              if (action === 'Clock In') document.getElementById('empName').value = ''; 
             } else {
               showStatus(resultMsg, "#fee2e2", "#991b1b");
             }
           }).catch(() => showStatus("❌ Network Error.", "#fee2e2", "#991b1b"));
       },
-      () => showStatus("❌ Location access is required.", "#fee2e2", "#991b1b"),
+      // Upgraded Error Handling for GPS
+      (error) => {
+        let errorMsg = "❌ Location access blocked.";
+        if (error.code === 1) errorMsg = "❌ GPS Denied. Please unblock location in your phone's browser settings.";
+        if (error.code === 2) errorMsg = "❌ GPS Unavailable. Are your phone's location services turned on?";
+        if (error.code === 3) errorMsg = "❌ GPS Timeout. Try stepping outside.";
+        showStatus(errorMsg, "#fee2e2", "#991b1b");
+      },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  }
+
+  // Allows resetting the device for a new employee
+  function resetDevice() {
+    localStorage.removeItem("attendance_employee_name");
+    document.getElementById("welcomeSection").style.display = "none";
+    document.getElementById("nameSection").style.display = "block";
+    document.getElementById("empName").value = '';
+    showStatus("Device reset. Please enter new name.", "#f3f4f6", "#374151");
   }
 
   function showStatus(msg, bg, color) {
@@ -120,47 +161,24 @@
     statusDiv.style.color = color;
   }
 
+  // Sidebar code
   function openSidebar() {
-    const pin = prompt("Enter Employer PIN (Hint: it is 1234):");
-    if (pin !== "1234") {
-        alert("Incorrect PIN");
-        return;
-    }
+    if (prompt("Enter Employer PIN:") !== "1234") return alert("Incorrect PIN");
     document.getElementById('sidebar').style.right = '0';
-    loadRecords();
-  }
-
-  function closeSidebar() {
-    document.getElementById('sidebar').style.right = '-100%';
-  }
-
-  function loadRecords() {
-    const tbody = document.querySelector('#recordsTable tbody');
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading records...</td></tr>';
     
-    fetch(`${API_URL}?action=ViewRecords`)
-      .then(res => res.json())
-      .then(data => {
+    const tbody = document.querySelector('#recordsTable tbody');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
+    
+    fetch(`${API_URL}?action=ViewRecords`).then(res => res.json()).then(data => {
         tbody.innerHTML = '';
         for (let i = data.length - 1; i > 0; i--) {
-          const row = data[i];
-          if(!row[0]) continue; 
-          
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${row[0]}</td>
-            <td>${row[1]}</td>
-            <td>${row[2]}</td>
-            <td>${row[3] || '-'}</td>
-            <td>${row[5] || '-'}</td>
-          `;
-          tbody.appendChild(tr);
+          if(!data[i][0]) continue; 
+          tbody.innerHTML += `<tr><td>${data[i][0]}</td><td>${data[i][1]}</td><td>${data[i][2]}</td><td>${data[i][3] || '-'}</td><td>${data[i][5] || '-'}</td></tr>`;
         }
-      })
-      .catch(() => {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Failed to load data.</td></tr>';
-      });
+      }).catch(() => tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Failed to load data.</td></tr>');
   }
+
+  function closeSidebar() { document.getElementById('sidebar').style.right = '-100%'; }
 </script>
 </body>
 </html>
