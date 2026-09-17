@@ -13,14 +13,14 @@
   .profile-header { display: flex; align-items: center; margin-bottom: 24px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; }
   .avatar { width: 50px; height: 50px; background-color: #3b82f6; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; margin-right: 15px; }
   .user-info h2 { margin: 0; font-size: 18px; color: #1f2937; text-align: left; }
-  .user-info p { margin: 4px 0 0 0; font-size: 13px; color: #6b7280; }
+  .user-info p { margin: 4px 0 0 0; font-size: 13px; color: #6b7280; word-break: break-all; }
 
   label { font-weight: 600; color: #4a4a4a; display: block; margin-bottom: 8px; font-size: 14px; }
-  input { width: 100%; padding: 14px; margin-bottom: 8px; box-sizing: border-box; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; }
+  input { width: 100%; padding: 14px; margin-bottom: 15px; box-sizing: border-box; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; }
   
-  /* Style for when the name is locked */
+  /* Style for when the fields are locked */
   input[readonly] { background-color: #f3f4f6; color: #6b7280; cursor: not-allowed; border-color: #e5e7eb; }
-  .lock-msg { font-size: 12px; color: #10b981; margin-bottom: 20px; font-weight: 600; display: none; }
+  .lock-msg { font-size: 12px; color: #10b981; margin-bottom: 20px; font-weight: 600; display: none; margin-top: -5px; }
 
   button { width: 100%; padding: 16px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
   button:active { transform: scale(0.98); }
@@ -38,13 +38,17 @@
       <div class="avatar" id="avatarCircle">Me</div>
       <div class="user-info">
         <h2>Attendance Portal</h2>
-        <p>Log your daily working hours</p>
+        <p id="profileText">Log your daily working hours</p>
       </div>
     </div>
     
     <label for="empName">Employee Name</label>
     <input type="text" id="empName" placeholder="Enter your full name">
-    <div id="lockMsg" class="lock-msg">🔒 Device securely registered to you</div>
+
+    <label for="empEmail">Email Address</label>
+    <input type="email" id="empEmail" placeholder="Enter your email address">
+    
+    <div id="lockMsg" class="lock-msg">🔒 Device securely registered</div>
     
     <button id="btn-in" onclick="handleAttendance('Clock In')">Clock In</button>
     <button id="btn-out" onclick="handleAttendance('Clock Out')">Clock Out</button>
@@ -61,25 +65,37 @@
 
   window.onload = function() {
     const savedName = localStorage.getItem('savedEmployeeName');
-    if (savedName) {
-      lockDeviceToUser(savedName);
+    const savedEmail = localStorage.getItem('savedEmployeeEmail');
+    
+    if (savedName && savedEmail) {
+      lockDeviceToUser(savedName, savedEmail);
     }
   };
 
-  function lockDeviceToUser(name) {
+  function lockDeviceToUser(name, email) {
     const nameInput = document.getElementById('empName');
+    const emailInput = document.getElementById('empEmail');
+    
     nameInput.value = name;
-    nameInput.setAttribute('readonly', true); // This stops them from typing a friend's name!
+    emailInput.value = email;
+    
+    // Lock both inputs
+    nameInput.setAttribute('readonly', true); 
+    emailInput.setAttribute('readonly', true);
     
     document.getElementById('lockMsg').style.display = 'block';
     
-    // Change the "Me" avatar to the first letter of their name
+    // Update Profile Header visually
     document.getElementById('avatarCircle').innerText = name.charAt(0).toUpperCase();
+    document.getElementById('profileText').innerText = email;
+    document.getElementById('profileText').style.color = '#3b82f6';
   }
 
   async function handleAttendance(action) {
     const name = document.getElementById('empName').value.trim();
-    if (!name) return showStatus("⚠️ Please enter your name.", "#fee2e2", "#991b1b");
+    const email = document.getElementById('empEmail').value.trim();
+    
+    if (!name || !email) return showStatus("⚠️ Please enter both Name and Email.", "#fee2e2", "#991b1b");
 
     showStatus("📍 Getting location... Please wait.", "#e0f2fe", "#075985");
 
@@ -98,15 +114,17 @@
         } catch(e) { console.log("Geocoding failed."); }
 
         showStatus("⏳ Saving record...", "#e0f2fe", "#075985");
-        const url = `${API_URL}?name=${encodeURIComponent(name)}&action=${encodeURIComponent(action)}&location=${encodeURIComponent(locationName)}`;
+        // We now send the email to the backend as well
+        const url = `${API_URL}?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&action=${encodeURIComponent(action)}&location=${encodeURIComponent(locationName)}`;
 
         fetch(url).then(res => res.text()).then(resultMsg => {
             if (resultMsg.includes('Success')) {
               showStatus(resultMsg, "#d1fae5", "#065f46");
               
-              // Lock the device to this user immediately after their first successful clock-in!
+              // Save BOTH to the device and lock it
               localStorage.setItem('savedEmployeeName', name);
-              lockDeviceToUser(name);
+              localStorage.setItem('savedEmployeeEmail', email);
+              lockDeviceToUser(name, email);
               
             } else {
               showStatus(resultMsg, "#fee2e2", "#991b1b");
