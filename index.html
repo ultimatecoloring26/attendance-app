@@ -29,8 +29,15 @@
 
   button { width: 100%; padding: 16px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
   button:active { transform: scale(0.98); }
+  
   #btn-in { background-color: #10b981; color: white; }
   #btn-out { background-color: #ef4444; color: white; }
+  
+  /* New Rest Buttons CSS */
+  .break-row { display: flex; gap: 10px; margin: 8px 0; }
+  #btn-rest-start { background-color: #f59e0b; color: white; margin: 0; }
+  #btn-rest-end { background-color: #3b82f6; color: white; margin: 0; }
+  
   #status { margin-top: 20px; font-weight: 600; text-align: center; min-height: 24px; padding: 10px; border-radius: 8px; font-size: 14px; }
 </style>
 </head>
@@ -63,6 +70,13 @@
     <div id="lockMsg" class="lock-msg">🔒 Device securely registered</div>
     
     <button id="btn-in" onclick="handleAttendance('Clock In')">Clock In</button>
+    
+    <!-- New Rest Buttons Side-by-Side -->
+    <div class="break-row">
+      <button id="btn-rest-start" onclick="handleAttendance('Start Rest')">Start Rest</button>
+      <button id="btn-rest-end" onclick="handleAttendance('End Rest')">End Rest</button>
+    </div>
+    
     <button id="btn-out" onclick="handleAttendance('Clock Out')">Clock Out</button>
     
     <div id="status"></div>
