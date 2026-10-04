@@ -21,9 +21,18 @@ function doGet(e) {
   var timeString = timestamp.toLocaleTimeString(); // e.g. "8:30:00 AM"
   var dateString = timestamp.toLocaleDateString(); // e.g. "10/4/2026"
 
-  if (action === 'Clock In') {
-    // Appends to Columns: A(Name), B(Email), C(Date), D(Time In), E(Time Out), F(Total), G(GPS)
-    sheet.appendRow([name, email, dateString, timeString, "", "", "In: " + location]);
+ if (action === 'Clock In') {
+    // 1. Find the next empty row by looking only at Column A
+    var colA = sheet.getRange("A1:A").getValues();
+    var newRow = colA.filter(String).length + 1;
+    
+    // 2. Drop the data into the exact columns (Leaving H alone!)
+    sheet.getRange(newRow, 1).setValue(name);       // Column A: Name
+    sheet.getRange(newRow, 2).setValue(email);      // Column B: Email
+    sheet.getRange(newRow, 3).setValue(dateString); // Column C: Date
+    sheet.getRange(newRow, 4).setValue(timeString); // Column D: Time In
+    sheet.getRange(newRow, 7).setValue("In: " + location); // Column G: GPS
+    
     return ContentService.createTextOutput("✅ Success: Clock In recorded for " + name);
     
   } else {
