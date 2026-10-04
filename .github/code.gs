@@ -36,16 +36,21 @@ function doGet(e) {
     return ContentService.createTextOutput("✅ Success: Clock In recorded for " + name);
     
   } else {
-    // For Clock Out, Start Rest, End Rest -> We must find their open shift for the day
+    // For Clock Out, Start Rest, End Rest
     var dataRange = sheet.getDataRange().getValues();
     
     // Search backwards to find their latest Clock In that doesn't have a Clock Out yet
     for (var i = dataRange.length - 1; i >= 1; i--) {
       
-      // dataRange[i][0] is Name (Col A), dataRange[i][4] is Time Out (Col E)
-      if (dataRange[i][0] == name && dataRange[i][4] == "") {
+      // We use .trim() to chop off any invisible spacebars that might cause errors!
+      var rowName = String(dataRange[i][0]).trim();
+      var searchName = String(name).trim();
+      var timeOutCol = String(dataRange[i][4]).trim(); // Column E
+      
+      // If Name matches AND Column E (Time Out) is empty
+      if (rowName === searchName && timeOutCol === "") {
         
-        var rowNum = i + 1; // Translate array index to Google Sheet row number
+        var rowNum = i + 1; 
         var existingLoc = dataRange[i][6] || ""; // Get existing GPS from Column G
         
         if (action === 'Start Rest') {
@@ -65,6 +70,6 @@ function doGet(e) {
         }
       }
     }
-    return ContentService.createTextOutput("❌ Error: We couldn't find an open 'Clock In' for you today.");
+    return ContentService.createTextOutput("❌ Error: We couldn't find an open 'Clock In' row for you.");
   }
 }
